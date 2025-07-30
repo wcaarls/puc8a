@@ -1,8 +1,8 @@
-# PUC8
+# PUC8a
 
-Assembler and C compiler for the PUC8 processor
+Assembler and C compiler for the PUC8a processor
 
-Copyright 2020-2023 Wouter Caarls
+Copyright 2020-2025 Wouter Caarls
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,13 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Introduction
 
-PUC8 is a microcontroller with 8-bit registers. It is used in the
+PUC8a is an accumulator-based microcontroller with 8-bit registers. It is used in the
 ENG1448 course of PUC-Rio. This is the assembler and C compiler
 infrastructure for it.
 
 # Instruction set architecture
 
-This very simple processor is a Harvard design, with 17-bit instructions and 8-bit data values. Both instruction and data memories have 256 addresses.
+This very simple processor is a Harvard design, with 8-bit instructions and 8-bit data values.
+The memory has 256 addresses.
 
 ## Registers
 
@@ -33,41 +34,24 @@ There are 16 registers. `r14` is `sp`; `r15` is `pc`. The C compiler uses `r13` 
 
 ## Instructions
 
-All ALU instructions and MOV set flags.
+All ALU instructions set flags.
 
-| Group(2) | Op(2)  | Imm(1) | Nibble 1(4)  | Nibble 2(4)  | Nibble 3(4)  | Mnm | Effect | Example |
-|---|---|---|---|---|---|---|---|---|
-| 00 | 00 | 0 | rd   | rs        | c4i       | LDR  | rd <- [rs + c4i]                        | `ldr  r0, [r1, 4]`    |
-| 00 | 00 | 1 | rd   | c8u(7..4) | c8u(3..0) | LDR  | rd <- [c8u]                             | `ldr  r0, [254]`      |
-| 00 | 01 | 0 | rs1  | rs2       | c4i       | STR  | [rs2 + c4i] <- rs1                      | `str  r0, [r1, 4]`    |
-| 00 | 01 | 1 | rs   | c8u(7..4) | c8u(3..0) | STR  | [c8u] <- rs                             | `str  r0, [254]`      |
-| 00 | 10 | 0 | rd   | rs        | 0000      | MOV  | rd <- rs                                | `mov  r0, r1`         |
-| 00 | 10 | 1 | rd   | c8u(7..4) | c8u(3..0) | MOV  | rd <- c8u                               | `mov  r0, 254`        |
-| 00 | 11 | 0 | cond | rs        | c4i       | B    | if cond then pc <- rs + c4i             | `b    pc, -4`         |
-| 00 | 11 | 1 | cond | c8u(7..4) | c8u(3..0) | B    | if cond then pc <- c8u                  | `b    254`            |
-| 01 | 00 | 0 | rs   | 0000      | 0000      | PUSH | [sp] <- rs, sp <- sp - 1                | `push r0`             |
-| 01 | 01 | 0 | 0000 | rs        | 0000      | CALL | [sp] <- pc + 1, sp <- sp - 1, pc <- rs  | `call r0`             |
-| 01 | 01 | 1 | 0000 | c8u(7..4) | c8u(3..0) | CALL | [sp] <- pc + 1, sp <- sp - 1, pc <- c8u | `call 254`            |
-| 01 | 10 | 0 | rd   | 0000      | 0000      | POP  | rd <- [sp + 1], sp <- sp + 1            | `pop  r0`             |
-| 10 | 00 | 0 | rd   | rs1       | rs2       | ADD  | rd <- rs1 + rs2                         | `add  r0, r1, r2`     |
-| 10 | 00 | 1 | rd   | rs        | c4u       | ADD  | rd <- rs + c4u                          | `add  r0, r1, 4`      |
-| 10 | 01 | 0 | rd   | rs1       | rs2       | SUB  | rd <- rs1 - rs2                         | `sub  r0, r1, r2`     |
-| 10 | 01 | 1 | rd   | rs        | c4u       | SUB  | rd <- rs - c4u                          | `sub  r0, r1, 4`      |
-| 10 | 10 | 0 | rd   | rs1       | rs2       | SHL  | rd <- rs1 << rs2                        | `shl  r0, r1, r2`[^1] |
-| 10 | 10 | 1 | rd   | rs        | c4u       | SHL  | rd <- rs << c4u                         | `shl  r0, r1, 1`[^1]  |
-| 10 | 11 | 0 | rd   | rs1       | rs2       | SHR  | rd <- rs1 >> rs2                        | `shr  r0, r1, r2`[^1] |
-| 10 | 11 | 1 | rd   | rs        | c4u       | SHR  | rd <- rs >> c4u                         | `shr  r0, r1, 1`[^1]  |
-| 11 | 00 | 0 | rd   | rs1       | rs2       | AND  | rd <- rs1 & rs2                         | `and  r0, r1, r2`     |
-| 11 | 00 | 1 | rd   | rs        | c4u       | AND  | rd <- rs & (1<<c4u)                     | `and  r0, r1, 4`      |
-| 11 | 01 | 0 | rd   | rs1       | rs2       | ORR  | rd <- rs1 \| rs2                        | `orr  r0, r1, r2`     |
-| 11 | 01 | 1 | rd   | rs        | c4u       | ORR  | rd <- rs \| (1<<c4u)                    | `orr  r0, r1, 4`      |
-| 11 | 10 | 0 | rd   | rs1       | rs2       | EOR  | rd <- rs1 ^ rs2                         | `eor  r0, r1, r2`     |
-| 11 | 10 | 1 | rd   | rs        | c4u       | EOR  | rd <- rs ^ (1<<c4u)                     | `eor  r0, r1, 4`      |
-
-[^1]: May be implemented as a constant shift of 1.
-
-`c4i` can be omitted from the assembly instruction, in which case it is set
-to 0.
+| Opcode(4)  | Data(4) | Mnm | Effect | Example |
+|---|---|---|---|---|
+| 0000 | rs | LDA  | acc <- [rs]                        | `lda  r0`    |
+| 0001 | rd | STA  | [rd] <- acc                        | `sta  r0`    |
+| 0100 | 0000 | LDI  | acc <- [pc+1], pc <- pc + 1      | `ldi  42`    |
+| 0101 | cond | B  | if cond then pc <- [pc + 1] else pc <- pc + 1 | `bcc  42`    |
+| 0110 | rs | GET  | acc <- rs                        | `get  r0`    |
+| 0111 | rs | SET  | rs <- acc                        | `set  r0`    |
+| 1000 | rs | ADD  | acc <- acc + rs                       | `add  r0`    |
+| 1001 | rs | SUB  | acc <- acc - rs                       | `sub  r0`    |
+| 1010 | rd | INC  | rd <- rd + 1                       | `inc  r0`    |
+| 1011 | rd | DEC  | rd <- rd - 1                       | `dec  r0`    |
+| 1100 | rs | AND  | acc <- acc & rs                       | `and  r0`    |
+| 1101 | rs | OR  | acc <- acc \| rs                       | `or  r0`    |
+| 1110 | rs | XOR  | acc <- acc ^ rs                       | `xor  r0`    |
+| 1111 | rs | SHFT  | if (rs >= 0) acc <- acc << rs else acc <- acc >> -rs | `add  r0`    |
 
 ## Pseudo-instructions
 
@@ -77,7 +61,6 @@ to 0.
 | `bne` | `bnz` |
 | `bhs` | `bcs` |
 | `blo` | `bcc` |
-| `ret` | `pop pc` |
 
 ## Condition codes
 
@@ -150,23 +133,23 @@ Apart from these statements, the assembler recognizes the following directives:
 # Installation
 
 ```
-pip install puc8
+pip install puc8a
 ```
 
 or
 
 ```
-git clone https://github.com/wcaarls/puc8
-cd puc8
+git clone https://github.com/wcaarls/puc8a
+cd puc8a
 pip install .
 ```
 
 # Usage
 
 ```
-usage: as-puc8 [-h] [-o OUTPUT] [-s] [-t N] [-E] file
+usage: as-puc8a [-h] [-o OUTPUT] [-s] [-t N] [-E] file
 
-PUC8 Assembler (c) 2020-2023 Wouter Caarls, PUC-Rio
+PUC8a Assembler (c) 2020-2025 Wouter Caarls, PUC-Rio
 
 positional arguments:
   file                  ASM source file
@@ -182,9 +165,9 @@ options:
 ```
 
 ```
-usage: cc-puc8 [-h] [-o OUTPUT] [-s] [-t N] [-S] [-O {0,1,2}] file
+usage: cc-puc8a [-h] [-o OUTPUT] [-s] [-t N] [-S] [-O {0,1,2}] file
 
-PUC8 C compiler (c) 2020-2023 Wouter Caarls, PUC-Rio
+PUC8a C compiler (c) 2020-2025 Wouter Caarls, PUC-Rio
 
 positional arguments:
   file                  C source file
@@ -204,28 +187,28 @@ options:
 
 Directly compile C to VHDL
 ```
-./cc-puc8 examples/c/hello.c
+./cc-puc8a examples/c/hello.c
 ```
 
 Create assembly from C
 ```
-./cc-puc8 examples/c/hello.c -S
+./cc-puc8a examples/c/hello.c -S
 ```
 
 Assemble to VHDL code
 ```
-./as-puc8 examples/asm/ps2_lcd.asm
+./as-puc8a examples/asm/ps2_lcd.asm
 ```
 
 Assemble to VHDL package
 ```
-./as-puc8 examples/asm/ps2_lcd.asm -o ps2_lcd.vhdl
+./as-puc8a examples/asm/ps2_lcd.asm -o ps2_lcd.vhdl
 ```
 
 Simulate resulting C or assembly program
 ```
-./cc-puc8 -O0 examples/c/unittest.c -s
-./as-puc8 examples/asm/simple.asm -s
+./cc-puc8a -O0 examples/c/unittest.c -s
+./as-puc8a examples/asm/simple.asm -s
 ```
 
 # Acknowledgments

@@ -1,5 +1,5 @@
-"""Disassembler for ENG1448 8-bit processor
-   (c) 2020-2023 Wouter Caarls, PUC-Rio
+"""Disassembler for ENG1448 8-bit accumulator-based processor
+   (c) 2020-2025 Wouter Caarls, PUC-Rio
 """
 
 from .instructions import defs
@@ -12,7 +12,7 @@ class Disassembler():
     def __init__(self, map=None):
         self.map = map
 
-    def process(self, inst):
+    def process(self, inst, inst2):
         """Disassemble a single instruction, replacing addresses with labels if a memory map is available."""
         for mnemonic in defs:
             for (opcode, minor, operands) in defs[mnemonic]:
@@ -43,8 +43,9 @@ class Disassembler():
                             else:
                                 dis += f'{val}, '
                         elif o == '8':
-                            val = int(inst[istart:istart+8], 2)
-                            if self.map is not None and 4*val in self.map['code'] and (mnemonic == 'call' or mnemonic[0] == 'b'):
+                            # 8-bit immediates are in next byte
+                            val = int(inst2, 2)
+                            if self.map is not None and 4*val in self.map['code'] and mnemonic[0] == 'b':
                                 dis += f"@{self.map['code'][4*val]}, "
                             else:
                                 dis += f'{val}, '

@@ -1,5 +1,5 @@
-"""Simulator for ENG1448 8-bit processor
-   (c) 2020-2023 Wouter Caarls, PUC-Rio
+"""Simulator for ENG1448 8-bit accumulator-based processor
+   (c) 2020-2025 Wouter Caarls, PUC-Rio
 """
 
 import copy
@@ -8,6 +8,7 @@ from .disassembler import Disassembler
 class State:
     """Machine state for simulator."""
     def __init__(self):
+        self.acc = 0
         self.regs = [0 for i in range(16)]
         self.mem = [0 for i in range(256)]
         self.regs[14] = 255
@@ -20,6 +21,8 @@ class State:
         """Calculates difference between this state and another."""
         d = ''
 
+        if self.acc != state.acc:
+            d += f', acc <- {state.acc}'
         for i in range(14):
             if self.regs[i] != state.regs[i]:
                 d += f', r{i} <- {state.regs[i]}'
@@ -42,7 +45,7 @@ class State:
         return d
 
     def __str__(self):
-        s = ''
+        s = f'acc = {self.acc}, '
         for i in range(14):
             s += f'r{i} = {self.regs[i]}, '
         s += f'pc = {self.regs[15]}, sp = {self.regs[14]}, zf = {self.zero}, cf = {self.carry}, nf = {self.negative}, vf = {self.overflow}'
@@ -54,112 +57,90 @@ class Simulator:
     def __init__(self, map = None):
         self.disassembler = Disassembler(map)
 
-    def execute(self, bin, state):
+    def execute(self, bin, bin2, state):
         """Returns machine state after executing instruction."""
         # Disassemble instruction
-        m, dis = self.disassembler.process(bin)
+        m, _ = self.disassembler.process(bin, bin2)
 
-        opcode = bin[0:5]
-        imm = int(opcode[4], 2)
-        r1 = int(bin[5:9], 2)
-        r2 = int(bin[9:13], 2)
-        r3 = int(bin[13:17], 2)
-        c4i = int(bin[13]*4 + bin[13:17], 2)
-        c4 = int(bin[13:17], 2)
-        c8 = int(bin[9:17], 2)
+        opcode = bin[0:4]
+        r = int(bin[4:8], 2)
+        imm = int(bin2, 2)
         next = copy.deepcopy(state)
         next.regs[15] += 1
-
-        if imm:
-            addr = c8
-            if opcode[1] == '0':
-                val = c4
-            else:
-                val = (1<<c4)
-        else:
-            addr = (state.regs[r2] + c4i)&255
-            val = state.regs[r3]
+        
+        val = state.regs[r]
 
         # Simulate instructions
-        if m == 'ldr':
-            if addr == 2:
+        if m == 'lda':
+            if val == 2:
                 inp = input('Enter keyboard character: ')
                 if len(inp) > 0:
-                    next.regs[r1] = ord(inp[0])
+                    next.acc = ord(inp[0])
                 else:
-                    next.regs[r1] = 0
+                    next.acc = 0
             else:
-                next.regs[r1] = state.mem[addr]
-        elif m == 'str':
-            if addr == 7:
-                print(chr(state.regs[r1]), end='')
-            elif addr == 8 and state.regs[r1] == 1:
+                next.acc = state.mem[val]
+        elif m == 'sta':
+            if val == 7:
+                print(chr(state.acc), end='')
+            elif val == 8 and state.acc == 1:
                 print()
             else:
-                next.mem[addr] = state.regs[r1]
-        elif m == 'mov':
-            if opcode == '00100':
-                next.regs[r1] = state.regs[r2]
-            elif opcode == '00101':
-                next.regs[r1] = c8
-            next.zero = (next.regs[r1] == 0)
-            next.carry = False
-            next.negative = bool(next.regs[r1] & 128)
-            next.overflow = False
-        elif opcode[:4] == '0011':
+                next.mem[val] = state.acc
+        elif m == 'ldi':
+            next.acc = imm
+            next.regs[15] += 1
+        elif m[0] == 'b':
             # Direct jumps
             if ( m == 'b' or
                 (m == 'bz' and state.zero) or (m == 'bnz' and not state.zero) or
                 (m == 'bcs' and state.carry) or (m == 'bcc' and not state.carry) or
                 (m == 'blt' and (state.overflow != state.negative)) or
                 (m == 'bge' and (state.overflow == state.negative))):
-                if opcode[-1] == '0':
-                    # Uses incremented PC
-                    next.regs[15] = (next.regs[r2] + c4i)&255
-                else:
-                    next.regs[15] = c8
-        elif m == 'push':
-            if state.regs[14] == -1:
-                raise RuntimeError('Stack overflow')
-            next.mem[state.regs[14]] =  state.regs[r1]
-            next.regs[14] -= 1
-        elif m == 'pop' or m == 'ret':
-            if state.regs[14] == 255:
-                raise RuntimeError('Stack underflow')
-            next.regs[r1] = state.mem[state.regs[14]+1]
-            next.regs[14] += 1
-        elif m == 'call':
-            if state.regs[14] == -1:
-                raise RuntimeError('Stack overflow')
-            next.mem[state.regs[14]] = state.regs[15]+1
-            next.regs[15] = c8
-            next.regs[14] -= 1
+                    next.regs[15] = imm
+            else:
+                next.regs[15] += 1
+        elif m == 'get':
+            next.acc = val
+        elif m == 'set':
+            next.regs[r] = state.acc
         else:
             # ALU instructions (modify flags)
             next.overflow = 0
             if m == 'add':
-                res = state.regs[r2] + val
-                next.overflow = bool((~(state.regs[r2] ^ val) & (state.regs[r2] ^ res)) & 128)
+                res = state.acc + val
+                next.overflow = bool((~(state.acc ^ val) & (state.acc ^ res)) & 128)
+            if m == 'inc':
+                res = val + 1
+                next.overflow = bool((~(val ^ 1) & (val ^ res)) & 128)
             elif m == 'sub':
-                res = state.regs[r2] + (256-val)
-                next.overflow = bool(( (state.regs[r2] ^ val) & (state.regs[r2] ^ res)) & 128)
-            elif m == 'shl':
-                res = state.regs[r2] << 1
-            elif m == 'shr':
-                res = state.regs[r2] >> 1
+                res = state.acc + (256-val)
+                next.overflow = bool(( (state.acc ^ val) & (state.acc ^ res)) & 128)
+            elif m == 'dec':
+                res = val + 255
+                next.overflow = bool(( (val ^ 1) & (val ^ res)) & 128)
+            elif m == 'shft':
+                if val >= 0:
+                    res = state.acc << val
+                else:
+                    res = state.acc >> -val
             elif m == 'and':
-                res = state.regs[r2] & val
-            elif m == 'orr':
-                res = state.regs[r2] | val
-            elif m == 'eor':
-                res = state.regs[r2] ^ val
+                res = state.acc & val
+            elif m == 'or':
+                res = state.acc | val
+            elif m == 'xor':
+                res = state.acc ^ val
             else:
                 raise ValueError(f'Unknown opcode {opcode}')
 
             next.zero = ((res&255) == 0)
             next.carry = bool(res & 256)
             next.negative = bool(res & 128)
-            next.regs[r1] = res&255
+            
+            if m == 'inc' or m == 'dec':
+                next.regs[r] = res&255
+            else:
+                next.acc = res&255
 
         return next
 
@@ -185,20 +166,25 @@ class Simulator:
 
         breakpoints = []
         quiet = False
+        men = None
 
         while True:
             # Print current instruction
             bin = mem['code'][state.regs[15]][0]
+            bin2 = mem['code'][(state.regs[15]+1)%256][0]
 
             if quiet:
-                next = copy.deepcopy(self.execute(bin, state))
+                next = copy.deepcopy(self.execute(bin, bin2, state))
                 if next.regs[15] == state.regs[15] or next.regs[15] in breakpoints:
                     quiet = False
                 state = next
                 continue
 
-            _, dis = self.disassembler.process(bin)
-            print(f'{state.regs[15]:3}: {bin[0:4]} {bin[4]} {bin[5:9]} {bin[9:13]} {bin[13:17]} ({dis})')
+            mne, dis = self.disassembler.process(bin, bin2)
+            if mne == 'ldi' or mne[0] == 'b':
+                print(f'{state.regs[15]:3}: {bin[0:4]} {bin[4:8]} {bin2} ({dis})')
+            else:
+                print(f'{state.regs[15]:3}: {bin[0:4]} {bin[4:8]} ({dis})')
 
             next = copy.deepcopy(state)
 
@@ -206,7 +192,7 @@ class Simulator:
             cmd = input('>> ').strip()
             if cmd == '' or cmd == 'n':
                 # Advance to next instruction
-                next = self.execute(bin, state)
+                next = self.execute(bin, bin2, state)
             elif cmd == 'c':
                 # Execute continuously
                 quiet = True
@@ -278,6 +264,7 @@ class Simulator:
 
         for s in range(steps):
             bin = mem['code'][state.regs[15]][0]
-            state = copy.deepcopy(self.execute(bin, state))
+            bin2 = mem['code'][(state.regs[15]+1)%256][0]
+            state = copy.deepcopy(self.execute(bin, bin2, state))
 
         return state.regs[15]

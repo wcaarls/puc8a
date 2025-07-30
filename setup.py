@@ -6,12 +6,12 @@ try:
 except:
     long_description = ''
 
-setup(name='puc8',
+setup(name='puc8a',
       version='0.1.4',
-      description='Assembler and C compiler for the PUC8 processor',
+      description='Assembler and C compiler for the PUC8a processor',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      url='http://github.com/wcaarls/puc8',
+      url='http://github.com/wcaarls/puc8a',
       author='Wouter Caarls',
       author_email='wouter@puc-rio.br',
       license='GNU GPLv3+',
@@ -27,6 +27,6 @@ setup(name='puc8',
       packages=find_packages(),
       package_data={'': ['*.grammar']},
       entry_points = {
-        'console_scripts': ['as-puc8=puc8.asm:main',
-                            'cc-puc8=puc8.cc:main']
+        'console_scripts': ['as-puc8a=puc8a.asm:main',
+                            'cc-puc8a=puc8a.cc:main']
       })

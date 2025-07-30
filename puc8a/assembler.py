@@ -1,5 +1,5 @@
-"""Assembler for ENG1448 8-bit processor
-(c) 2020-2023 Wouter Caarls, PUC-Rio
+"""Assembler for ENG1448 8-bit accumulator-based processor
+(c) 2020-2025 Wouter Caarls, PUC-Rio
 """
 
 import sys, os, string, math, re
@@ -238,6 +238,8 @@ class Assembler:
                 raise ValueError(f'{idx}: Cannot use .db in code section')
             elif mnemonic == '.section':
                 section = operands[0]
+            elif mnemonic == 'ldi' or mnemonic[0] == 'b':
+                loc[section] += 2
             else:
                 loc[section] += 1
 
@@ -347,6 +349,17 @@ class Assembler:
                 mem[section].append((operands[0], f'{idx}: {ref}{inst}'))
             elif section != 'code':
                 raise ValueError(f'{idx}: Cannot use instructions in data section')
+            elif mnemonic == 'ldi' or mnemonic[0] == 'b':
+                instcode = opcode
+                instcode += minor
+                
+                mem[section].append((instcode, f'{idx}: {ref}{inst}'))
+                
+                instcode = ''
+                for o in operands:
+                    instcode += o
+                    
+                mem[section].append((instcode, ''))
             else:
                 instcode = opcode
                 for o in operands:
