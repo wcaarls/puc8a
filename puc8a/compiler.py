@@ -9,6 +9,12 @@ from .ppci.api import ir_to_assembly, optimize
 
 def compile(src, opt_level):
     asm = """
+
+.macro mov
+get $1
+set $0
+.endmacro
+
 .section data
 btn: .db 0
 enc: .db 0
@@ -22,13 +28,18 @@ lcr: .db 0
 .org 0x10
 
 .section code
-call @main
+ldi 6
+add pc
+sta [sp]
+dec sp
+ldi @main
+set pc
 loop: b @loop
 """
-    ir_module = c_to_ir(src, 'puc8')
+    ir_module = c_to_ir(src, 'puc8a')
     optimize(ir_module, level=opt_level)
 
-    ppci_asm = StringIO(ir_to_assembly([ir_module], 'puc8'))
+    ppci_asm = StringIO(ir_to_assembly([ir_module], 'puc8a'))
 
     lbl = ''
     for l in ppci_asm.readlines():

@@ -29,44 +29,29 @@ _loop:  b @_loop
 ; .macro
 ; arguments
         .macro macro2
-_loop:  mov r1, $0
-        mov r1, $1
+_loop:  ldi $0
+        ldi $1
         macro1
         b @_loop
         .endmacro
         macro2 0xAA, 0x55
 
 ; Instructions
-inst:   ldr  r1, [r2]
-        ldr  r1, [r2, 1]
-        ldr  r1, [1]
-        ldr  r1, [@mylbl]
-        str  r1, [r2]
-        str  r1, [r2, 1]
-        str  r1, [1]
-        mov  r1, 12
-        mov  r1, 0x55
-        mov  r1, "a"
-        mov  r1, @equ1
-        mov  r1, r2
+inst:   lda  [r1]
+        sta  [r1]
 
-        push r1
-        pop  r1
+        get  r1
+        set  r1
 
-        add r1, r2, r3
-        add r1, r2, 1
-        sub r1, r2, r3
-        sub r1, r2, 1
-        shl r1, r2, r3
-        shl r1, r2, 1
-        shr r1, r2, r3
-        shr r1, r2, 1
-        and r1, r2, r3
-        and r1, r2, 1
-        orr r1, r2, r3
-        orr r1, r2, 1
-        eor r1, r2, r3
-        eor r1, r2, 1
+        inc  r1
+        dec  r1
+
+        add  r1
+        sub  r1
+        and  r1
+        or   r1
+        xor  r1
+        shft r1
 
         b 1
         b @mylbl
@@ -79,6 +64,3 @@ inst:   ldr  r1, [r2]
         bhs 1
         bcc 1
         blo 1
-
-        call 1
-        ret

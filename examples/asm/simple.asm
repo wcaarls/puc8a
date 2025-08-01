@@ -1,3 +1,4 @@
-main: mov  r0, 0
-loop: add  r0, r0, 1
+main: ldi  0
+      set  r0
+loop: inc  r0
       b    @loop

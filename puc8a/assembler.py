@@ -352,13 +352,13 @@ class Assembler:
             elif mnemonic == 'ldi' or mnemonic[0] == 'b':
                 instcode = opcode
                 instcode += minor
-                
+
                 mem[section].append((instcode, f'{idx}: {ref}{inst}'))
-                
+
                 instcode = ''
                 for o in operands:
                     instcode += o
-                    
+
                 mem[section].append((instcode, ''))
             else:
                 instcode = opcode

@@ -1,11 +1,11 @@
 """ Contains a list of instantiated targets. """
 
 from functools import lru_cache
-from .puc8 import PUC8Arch
+from .puc8a import PUC8aArch
 
 
 target_classes = [
-    PUC8Arch,
+    PUC8aArch,
 ]
 
 

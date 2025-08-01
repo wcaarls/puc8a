@@ -1,4 +1,4 @@
-""" Define PUC8 architecture """
+""" Define PUC8a architecture """
 
 from ... import ir
 from ...binutils.assembler import BaseAssembler
@@ -9,10 +9,10 @@ from ..runtime import get_runtime_files
 from . import instructions, registers
 from ..data_instructions import data_isa
 
-class PUC8Arch(Architecture):
-    """ PUC8 architecture """
+class PUC8aArch(Architecture):
+    """ PUC8a architecture """
 
-    name = "puc8"
+    name = "puc8a"
 
     def __init__(self, options=None):
         super().__init__(options=options)
@@ -72,17 +72,17 @@ class PUC8Arch(Architecture):
 
         # Callee save registers:
         for reg in self.get_callee_saved(frame):
-            yield instructions.Push(reg)
+            yield from self.push(reg)
 
         # Allocate stack and set frame pointer
         if frame.stacksize > 0:
-            yield instructions.Push(registers.fp)
-            yield self.move(registers.fp, registers.sp)
+            yield from self.push(registers.fp)
+            yield from self.move(registers.fp, registers.sp)
 
             ss = frame.stacksize
             while ss > 0:
-                yield instructions.SubC(registers.sp, registers.sp, min(ss, 15))
-                ss -= 15
+                yield instructions.Dec(registers.sp)
+                ss -= 1
 
     def gen_epilogue(self, frame):
         """ Return epilogue sequence """
@@ -90,17 +90,17 @@ class PUC8Arch(Architecture):
         if frame.stacksize > 0:
             ss = frame.stacksize
             while ss > 0:
-                yield instructions.AddC(registers.sp, registers.sp, min(ss, 15))
-                ss -= 15
+                yield instructions.Inc(registers.sp)
+                ss -= 1
 
-            yield instructions.Pop(registers.fp)
+            yield from self.pop(registers.fp)
 
         # Pop save registers back:
         for reg in reversed(self.get_callee_saved(frame)):
-            yield instructions.Pop(reg)
+            yield from self.pop(reg)
 
         # Return
-        yield instructions.Pop(registers.pc)
+        yield from self.pop(registers.pc)
 
     def get_callee_saved(self, frame):
         saved_registers = []
@@ -116,34 +116,39 @@ class PUC8Arch(Architecture):
         arg_regs = []
         for arg_loc, arg2 in zip(arg_locs, args):
             arg = arg2[1]
-            if isinstance(arg_loc, registers.PUC8Register):
+            if isinstance(arg_loc, registers.PUC8aRegister):
                 arg_regs.append(arg_loc)
-                yield self.move(arg_loc, arg)
+                yield from self.move(arg_loc, arg)
             else:  # pragma: no cover
                 raise NotImplementedError("Parameters in memory not impl")
 
         yield RegisterUseDef(uses=arg_regs)
 
-        yield instructions.CallL(label, clobbers=registers.caller_save)
+        yield instructions.LdiC(6)
+        yield instructions.Add(registers.pc)
+        yield instructions.Sta(registers.sp)
+        yield instructions.Dec(registers.sp)
+        yield instructions.LdiL(label)
+        yield instructions.Set(registers.pc, clobbers=registers.caller_save)
 
         if rv:
             retval_loc = self.determine_rv_location(rv[0])
             yield RegisterUseDef(defs=(retval_loc,))
-            yield self.move(rv[1], retval_loc)
+            yield from self.move(rv[1], retval_loc)
 
     def gen_function_enter(self, args):
         arg_types = [a[0] for a in args]
         arg_locs = self.determine_arg_locations(arg_types)
 
         arg_regs = set(
-            l for l in arg_locs if isinstance(l, registers.PUC8Register)
+            l for l in arg_locs if isinstance(l, registers.PUC8aRegister)
         )
         yield RegisterUseDef(defs=arg_regs)
 
         for arg_loc, arg2 in zip(arg_locs, args):
             arg = arg2[1]
-            if isinstance(arg_loc, registers.PUC8Register):
-                yield self.move(arg, arg_loc)
+            if isinstance(arg_loc, registers.PUC8aRegister):
+                yield from self.move(arg, arg_loc)
             else:  # pragma: no cover
                 raise NotImplementedError("Parameters in memory not impl")
 
@@ -151,9 +156,19 @@ class PUC8Arch(Architecture):
         live_out = set()
         if rv:
             retval_loc = self.determine_rv_location(rv[0])
-            yield self.move(retval_loc, rv[1])
+            yield from self.move(retval_loc, rv[1])
             live_out.add(retval_loc)
         yield RegisterUseDef(uses=live_out)
 
     def move(self, dst, src):
-        return instructions.MovR(dst, src, ismove=True)
+        yield instructions.Mov(dst, src, ismove=True)
+
+    def push(self, reg):
+        yield instructions.Get(reg)
+        yield instructions.Sta(registers.sp)
+        yield instructions.Dec(registers.sp)
+
+    def pop(self, reg):
+        yield instructions.Inc(registers.sp)
+        yield instructions.Lda(registers.sp)
+        yield instructions.Set(reg)

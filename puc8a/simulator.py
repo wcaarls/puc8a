@@ -67,7 +67,7 @@ class Simulator:
         imm = int(bin2, 2)
         next = copy.deepcopy(state)
         next.regs[15] += 1
-        
+
         val = state.regs[r]
 
         # Simulate instructions
@@ -110,7 +110,7 @@ class Simulator:
             if m == 'add':
                 res = state.acc + val
                 next.overflow = bool((~(state.acc ^ val) & (state.acc ^ res)) & 128)
-            if m == 'inc':
+            elif m == 'inc':
                 res = val + 1
                 next.overflow = bool((~(val ^ 1) & (val ^ res)) & 128)
             elif m == 'sub':
@@ -120,10 +120,10 @@ class Simulator:
                 res = val + 255
                 next.overflow = bool(( (val ^ 1) & (val ^ res)) & 128)
             elif m == 'shft':
-                if val >= 0:
-                    res = state.acc << val
+                if val > 127:
+                    res = state.acc >> (256-val)
                 else:
-                    res = state.acc >> -val
+                    res = state.acc << val
             elif m == 'and':
                 res = state.acc & val
             elif m == 'or':
@@ -131,12 +131,12 @@ class Simulator:
             elif m == 'xor':
                 res = state.acc ^ val
             else:
-                raise ValueError(f'Unknown opcode {opcode}')
+                raise ValueError(f'Unknown opcode {opcode} (\'{m}\')')
 
             next.zero = ((res&255) == 0)
             next.carry = bool(res & 256)
             next.negative = bool(res & 128)
-            
+
             if m == 'inc' or m == 'dec':
                 next.regs[r] = res&255
             else:
@@ -171,7 +171,7 @@ class Simulator:
         while True:
             # Print current instruction
             bin = mem['code'][state.regs[15]][0]
-            bin2 = mem['code'][(state.regs[15]+1)%256][0]
+            bin2 = mem['code'][(state.regs[15]+1)%len(mem['code'])][0]
 
             if quiet:
                 next = copy.deepcopy(self.execute(bin, bin2, state))
@@ -264,7 +264,7 @@ class Simulator:
 
         for s in range(steps):
             bin = mem['code'][state.regs[15]][0]
-            bin2 = mem['code'][(state.regs[15]+1)%256][0]
+            bin2 = mem['code'][(state.regs[15]+1)%len(mem['code'])][0]
             state = copy.deepcopy(self.execute(bin, bin2, state))
 
         return state.regs[15]
