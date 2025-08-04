@@ -26,7 +26,7 @@ infrastructure for it.
 # Instruction set architecture
 
 This very simple processor is a Harvard design, with 8-bit instructions and 8-bit data values.
-The memory has 256 addresses.
+Both instruction and data memories have 256 addresses.
 
 ## Registers
 
@@ -51,7 +51,7 @@ All ALU instructions set flags.
 | 1100 | rs | AND  | acc <- acc & rs                       | `and  r0`    |
 | 1101 | rs | OR  | acc <- acc \| rs                       | `or  r0`    |
 | 1110 | rs | XOR  | acc <- acc ^ rs                       | `xor  r0`    |
-| 1111 | rs | SHFT  | if (rs >= 0) acc <- acc << rs else acc <- acc >> -rs | `add  r0`    |
+| 1111 | rs | SHFT  | if (rs >= 0) acc <- acc << rs else acc <- acc >> -rs | `shft  r0`    |
 
 ## Pseudo-instructions
 
@@ -82,11 +82,13 @@ Assembly statements generally follow the following structure
 ```
 The available `MNEMONIC`s can be found in the table above. `OPERAND`s can be registers, constants, or labels. Labels used as operands must be prefixed with `@`:
 ```asm
-loop: jmp @loop
+loop: b @loop
 ```
 When the operand is used as the contents of a memory address, it must be enclosed in square brackets:
 ```asm
-ldr r0, [@inp]
+ldi @inp
+set r0
+lda [r0]
 .section data
 inp: .db 0
 ```
