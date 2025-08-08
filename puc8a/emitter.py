@@ -1,5 +1,5 @@
 """ASM and VHDL emitter for ENG1448 8-bit processor
-   (c) 2020-2023 Wouter Caarls, PUC-Rio
+   (c) 2020-2025 Wouter Caarls, PUC-Rio
 """
 
 import os
@@ -43,7 +43,7 @@ def emitvhdl(mem, f):
 use ieee.std_logic_1164.all;
 
 package {pkg} is
-  type {pkg}ROMT is array(0 to 255) of std_logic_vector(16 downto 0);
+  type {pkg}ROMT is array(0 to 255) of std_logic_vector(7 downto 0);
   type {pkg}RAMT is array(0 to 255) of std_logic_vector(7 downto 0);
 
   constant {pkg}_rom: {pkg}ROMT := """, file=f, end='')
