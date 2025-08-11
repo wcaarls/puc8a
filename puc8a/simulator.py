@@ -68,7 +68,7 @@ class Simulator:
         next = copy.deepcopy(state)
         next.regs[15] += 1
 
-        val = state.regs[r]
+        val = next.regs[r]
 
         # Simulate instructions
         if m == 'lda':

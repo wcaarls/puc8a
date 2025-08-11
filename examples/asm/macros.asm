@@ -1,24 +1,53 @@
 ; Example macros for ENG1448 processor
 
-; Call subroutine
-; INPUT : Immediate destination address in $0
+; Copy value from one register into another
+; INPUT : Source value in register $1
+; OUTPUT: Copied value in register $0
+.macro mov
+       get  $1
+       set  $0
+.endmacro
+
+; Load immediate into register
+; INPUT:  Immediate value in $1
+; OUTPUT: Copied value in register $0
+.macro ldr
+       ldi  $1
+       set  $0
+.endmacro
+
+; Push accumulator onto stack
+; INPUT : None
 ; OUTPUT: None
-.macro call
-       ldi 6
-       add pc          ; Calculate return address
-       sta [sp]
-       dec sp          ; Push to stack
-       ldi $0
-       set pc          ; Jump to destination
+.macro push
+       sta  [sp]
+       dec  sp
+.endmacro
+
+; Load accumulator from stack
+; INPUT : None
+; OUTPUT: None
+.macro pop
+       inc  sp
+       lda  [sp]
 .endmacro
 
 ; Return from subroutine
 ; INPUT : None
 ; OUTPUT: None
 .macro ret
-       inc sp
-       lda [sp]        ; Pop return address from stack
+       pop             ; Pop return address from stack
        set pc          ; Jump to return address
+.endmacro
+
+; Call subroutine
+; INPUT : Immediate destination address in $0
+; OUTPUT: None
+.macro call
+       ldi  3
+       add  pc         ; Calculate return address
+       push            ; Push to stack
+       b    $0         ; Jump to destination
 .endmacro
 
 ; Wait for keyboard character.

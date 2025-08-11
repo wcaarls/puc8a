@@ -124,7 +124,7 @@ class PUC8aArch(Architecture):
 
         yield RegisterUseDef(uses=arg_regs)
 
-        yield instructions.LdiC(6)
+        yield instructions.LdiC(5)
         yield instructions.Add(registers.pc)
         yield instructions.Sta(registers.sp)
         yield instructions.Dec(registers.sp)

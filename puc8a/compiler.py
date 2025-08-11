@@ -28,7 +28,7 @@ lcr: .db 0
 .org 0x10
 
 .section code
-ldi 6
+ldi 5
 add pc
 sta [sp]
 dec sp

@@ -1,4 +1,4 @@
-#include "puc8.h"
+#include "puc8a.h"
 
 unsigned char buf[] = "# ";
 
