@@ -38,10 +38,10 @@ All ALU instructions set flags.
 
 | Opcode(4)  | Data(4) | Mnm | Effect | Example |
 |---|---|---|---|---|
-| 0000 | rs | LDA  | acc <- [rs]                        | `lda  r0`    |
-| 0001 | rd | STA  | [rd] <- acc                        | `sta  r0`    |
-| 0100 | 0000 | LDI  | acc <- [pc+1], pc <- pc + 1      | `ldi  42`    |
-| 0101 | cond | B  | if cond then pc <- [pc + 1] else pc <- pc + 1 | `bcc  42`    |
+| 0000 | rs | LDA  | acc <- dmem[rs]                        | `lda  r0`    |
+| 0001 | rd | STA  | dmem[rd] <- acc                        | `sta  r0`    |
+| 0100 | 0000 | LDI  | acc <- imem[pc+1], pc <- pc + 1      | `ldi  42`    |
+| 0101 | cond | B<cond>  | if cond then pc <- imem[pc + 1] else pc <- pc + 1 | `bcc  42`    |
 | 0110 | rs | GET  | acc <- rs                        | `get  r0`    |
 | 0111 | rs | SET  | rs <- acc                        | `set  r0`    |
 | 1000 | rs | ADD  | acc <- acc + rs                       | `add  r0`    |
@@ -53,6 +53,18 @@ All ALU instructions set flags.
 | 1110 | rs | XOR  | acc <- acc ^ rs                       | `xor  r0`    |
 | 1111 | rs | SHFT  | if (rs >= 0) acc <- acc << rs else acc <- acc >> -rs | `shft  r0`    |
 
+## Condition codes
+
+| Condition | Instruction mnemonic | Meaning |
+|---|---|---|
+| 0000 | B | Unconditional |
+| 0001 | BZ | Zero flag set |
+| 0010 | BNZ | Zero flag not set |
+| 0011 | BCS | Carry flag set |
+| 0100 | BCC | Carry flag not set |
+| 0101 | BLT | Signed less than |
+| 0110 | BGE | Signed greater than or equal |
+
 ## Pseudo-instructions
 
 | Pseudo-instruction | Actual instruction |
@@ -61,18 +73,6 @@ All ALU instructions set flags.
 | `bne` | `bnz` |
 | `bhs` | `bcs` |
 | `blo` | `bcc` |
-
-## Condition codes
-
-| Condition | Meaning |
-|---|---|
-| 0000 | Unconditional |
-| 0001 | Zero flag set |
-| 0010 | Zero flag not set |
-| 0011 | Carry flag set |
-| 0100 | Carry flag not set |
-| 0101 | Signed less than |
-| 0110 | Signed greater than or equal |
 
 # Assembly language
 
