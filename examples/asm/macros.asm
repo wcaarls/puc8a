@@ -44,7 +44,7 @@
 ; INPUT : Immediate destination address in $0
 ; OUTPUT: None
 .macro call
-       ldi  3
+       ldi  4
        add  pc         ; Calculate return address
        push            ; Push to stack
        b    $0         ; Jump to destination

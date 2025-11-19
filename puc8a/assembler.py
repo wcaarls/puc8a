@@ -118,6 +118,20 @@ class Preprocessor:
                         else:
                             code.append((file, idx, tmp, '.db ' + o))
                             tmp = ''
+                elif mnemonic == '.zero':
+                    # Split .zero into separate .db directives
+                    tmp = label
+                    if len(operands) != 1:
+                        raise SyntaxError(f'{file}:{idx:3}: Expected single number of zeros')
+
+                    try:
+                        num = int(o, 0)
+                    except:
+                        raise ValueError(f'{idx}: Cannot parse number of zeros {o}')
+
+                    for i in range(num):
+                        code.append((file, idx, tmp, '.db 0'))
+                        tmp = ''
                 elif mnemonic == '.macro':
                     # Create a new macro.
                     if len(operands) != 1:
@@ -232,6 +246,9 @@ class Assembler:
                 # .equ just adds a new label and does not advance instruction
                 if len(operands) < 2:
                     raise SyntaxError(f'{idx}: {mnemonic} directive requires 2 arguments')
+
+                if operands[0] in labels:
+                    raise SyntaxError(f'{idx}: Redefinition of equ {operands[0]}')
 
                 labels[operands[0]] = int(operands[1], 0)
             elif mnemonic == '.db' and section == 'code':
