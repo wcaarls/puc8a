@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # Introduction
 
 PUC8a is an accumulator-based microcontroller with 8-bit registers. It is used in the
-ENG1448 course of PUC-Rio. This is the assembler and C compiler
+ENG4448 course of PUC-Rio. This is the assembler and C compiler
 infrastructure for it.
 
 # Instruction set architecture

@@ -7,7 +7,7 @@ except:
     long_description = ''
 
 setup(name='puc8a',
-      version='0.1.6',
+      version='0.1.7',
       description='Assembler and C compiler for the PUC8a processor',
       long_description=long_description,
       long_description_content_type='text/markdown',
