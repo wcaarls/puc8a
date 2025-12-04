@@ -109,6 +109,7 @@ class CodeGenerator:
                         # Emit reference to a label:
                         assert isinstance(part[1], str)
                         labels_refs = {
+                            (1, Endianness.LITTLE): data_instructions.Db2,
                             (2, Endianness.LITTLE): data_instructions.Dw2,
                             (4, Endianness.LITTLE): data_instructions.Dcd2,
                             (8, Endianness.LITTLE): data_instructions.Dq2,

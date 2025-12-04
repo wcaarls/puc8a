@@ -50,9 +50,15 @@ class DataInstruction(Instruction):
 class Db(DataInstruction):
     tokens = [ByteToken]
     v = Operand("v", int)
-    syntax = Syntax(["db", " ", v])
+    syntax = Syntax([".", "db", " ", v])
     patterns = {"value": v}
 
+
+class Db2(DataInstruction):
+    tokens = [ByteToken]
+    v = Operand("v", str)
+    syntax = Syntax([".", "db", " ", "@", v])
+    patterns = {"value": v}
 
 class Dw(DataInstruction):
     tokens = [WordToken]

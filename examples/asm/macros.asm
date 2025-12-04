@@ -90,7 +90,7 @@ _wait: ldi  @lcr
        set  r12
        and  r12        ; Set flags
        bnz  @_wait     ; Wait until zero
-       ldi  @ldr
+       ldi  @lcr
        set  r12
        ldi  0x01
        sta  [r12]      ; Clear LCD
